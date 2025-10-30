@@ -15,16 +15,15 @@ echo "<!DOCTYPE html>
 </head>
 <body>
     <div class='container'>
-        <h1>🚀 System Ready!</h1>
-        <div class='success'>✅ Database connection successful!</div>";
+        <h1>🚀 System Status</h1>";
 
-// Test database
 try {
     $settings = $pdo->query("SELECT * FROM expiry_settings WHERE id = 1")->fetch();
     $analytics = $pdo->query("SELECT * FROM analytics WHERE id = 1")->fetch();
     
+    echo "<div class='success'>✅ Database Connected Successfully!</div>";
     echo "<div class='info'>
-            <h3>✅ Database Test Successful!</h3>
+            <h3>Current Settings:</h3>
             <p><strong>Expiry Date:</strong> " . $settings['expiry_date'] . "</p>
             <p><strong>Dialog Title:</strong> " . $settings['dialog_title'] . "</p>
             <p><strong>Total Checks:</strong> " . $analytics['total_checks'] . "</p>
@@ -37,22 +36,10 @@ try {
 
 echo "
         <div class='info'>
-            <h3>📧 Admin Login Details:</h3>
-            <p><strong>Username:</strong> admin</p>
-            <p><strong>Password:</strong> admin123</p>
-            <p><em>(Change password in config.php after login)</em></p>
+            <h3>🔗 Quick Links:</h3>
+            <a href='login.php' class='btn'>🚀 Admin Panel</a>
+            <a href='/' class='btn'>📡 API Test</a>
         </div>
-        
-        <div class='info'>
-            <h3>🔗 Your API Endpoint:</h3>
-            <p><strong>URL:</strong> https://ff-apk-expairidate.up.railway.app/</p>
-            <p>Use this URL in your Android app to check expiry</p>
-        </div>
-        
-        <br>
-        <a href='login.php' class='btn'>🚀 Go to Admin Panel</a>
-        <a href='/' class='btn'>📡 Test API Endpoint</a>
-        <a href='admin.php' class='btn'>⚙️ Direct Admin</a>
     </div>
 </body>
 </html>";
