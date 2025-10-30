@@ -8,8 +8,15 @@ if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
     exit();
 }
 
+// Handle logout
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: login.php');
+    exit();
+}
+
 // Handle form submission
-if ($_POST['update_settings']) {
+if (isset($_POST['update_settings'])) {
     $expiry_date = $_POST['expiry_date'];
     $dialog_title = $_POST['dialog_title'];
     $dialog_message = $_POST['dialog_message'];
@@ -41,7 +48,7 @@ if ($_POST['update_settings']) {
 }
 
 // Reset analytics
-if ($_POST['reset_analytics']) {
+if (isset($_POST['reset_analytics'])) {
     try {
         $pdo->exec("UPDATE analytics SET total_checks = 0, download_clicks = 0, exit_clicks = 0");
         $success = "✅ Analytics reset successfully!";
@@ -80,6 +87,7 @@ $is_expired = $now > $expiry;
             background: white; padding: 30px; border-radius: 15px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px;
             text-align: center;
+            position: relative;
         }
         .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .card { 
@@ -98,6 +106,7 @@ $is_expired = $now > $expiry;
         .btn { 
             padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer;
             font-size: 14px; font-weight: 500; transition: all 0.3s;
+            margin: 5px;
         }
         .btn-primary { background: #667eea; color: white; }
         .btn-primary:hover { background: #764ba2; transform: translateY(-2px); }
@@ -113,18 +122,25 @@ $is_expired = $now > $expiry;
         .color-preview { 
             width: 30px; height: 30px; display: inline-block; 
             border-radius: 5px; margin-left: 10px; vertical-align: middle;
+            border: 1px solid #ddd;
         }
-        .logout { float: right; background: #95a5a6; }
+        .logout { 
+            position: absolute; top: 20px; right: 20px; 
+            background: #95a5a6; color: white; text-decoration: none;
+            padding: 8px 15px; border-radius: 5px; font-size: 14px;
+        }
         .logout:hover { background: #7f8c8d; }
+        @media (max-width: 768px) {
+            .cards { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🚀 App Expiry Control Panel</h1>
-            <p>Welcome, <?php echo $_SESSION['admin_user']; ?>! 
-               <a href="?logout=1" class="btn logout">Logout</a>
-            </p>
+            <p>Welcome, <?php echo $_SESSION['admin_user']; ?>!</p>
+            <a href="?logout=1" class="logout">🚪 Logout</a>
         </div>
 
         <?php if (isset($success)): ?>
@@ -147,7 +163,7 @@ $is_expired = $now > $expiry;
                 <p><strong>Exit Clicks:</strong> <?php echo $analytics['exit_clicks']; ?></p>
                 
                 <form method="POST" style="margin-top: 20px;">
-                    <button type="submit" name="reset_analytics" class="btn btn-danger">Reset Analytics</button>
+                    <button type="submit" name="reset_analytics" class="btn btn-danger">🔄 Reset Analytics</button>
                 </form>
             </div>
 
@@ -208,7 +224,7 @@ $is_expired = $now > $expiry;
                         <input type="color" name="text_color" value="<?php echo $settings['text_color']; ?>" required>
                     </div>
                     
-                    <button type="submit" name="update_settings" class="btn btn-primary">Save Settings</button>
+                    <button type="submit" name="update_settings" class="btn btn-primary">💾 Save Settings</button>
                 </form>
             </div>
         </div>
@@ -238,6 +254,16 @@ $is_expired = $now > $expiry;
         
         updateCountdown();
         setInterval(updateCountdown, 1000);
+
+        // Update color previews in real-time
+        document.querySelectorAll('input[type="color"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const preview = this.previousElementSibling.querySelector('.color-preview');
+                if (preview) {
+                    preview.style.backgroundColor = this.value;
+                }
+            });
+        });
     </script>
 </body>
 </html>
