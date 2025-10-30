@@ -2,7 +2,8 @@
 session_start();
 include 'config.php';
 
-if (!isset($_SESSION['admin'])) {
+// Check if user is logged in
+if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
     header('Location: login.php');
     exit();
 }
@@ -19,30 +20,43 @@ if ($_POST['update_settings']) {
     $background_color = $_POST['background_color'];
     $text_color = $_POST['text_color'];
     
-    $sql = "UPDATE expiry_settings SET 
-            expiry_date = ?, dialog_title = ?, dialog_message = ?, 
-            update_link = ?, button_text = ?, exit_text = ?,
-            primary_color = ?, background_color = ?, text_color = ?
-            WHERE id = 1";
-    
-    $stmt = $pdo->prepare($sql);
-    if ($stmt->execute([$expiry_date, $dialog_title, $dialog_message, $update_link, 
-                       $button_text, $exit_text, $primary_color, $background_color, $text_color])) {
-        $success = "✅ Settings updated successfully!";
-    } else {
-        $error = "❌ Failed to update settings!";
+    try {
+        $sql = "UPDATE expiry_settings SET 
+                expiry_date = ?, dialog_title = ?, dialog_message = ?, 
+                update_link = ?, button_text = ?, exit_text = ?,
+                primary_color = ?, background_color = ?, text_color = ?,
+                last_updated = datetime('now')
+                WHERE id = 1";
+        
+        $stmt = $pdo->prepare($sql);
+        if ($stmt->execute([$expiry_date, $dialog_title, $dialog_message, $update_link, 
+                           $button_text, $exit_text, $primary_color, $background_color, $text_color])) {
+            $success = "✅ Settings updated successfully!";
+        } else {
+            $error = "❌ Failed to update settings!";
+        }
+    } catch(PDOException $e) {
+        $error = "❌ Database error: " . $e->getMessage();
     }
 }
 
 // Reset analytics
 if ($_POST['reset_analytics']) {
-    $pdo->exec("UPDATE analytics SET total_checks = 0, download_clicks = 0, exit_clicks = 0");
-    $success = "✅ Analytics reset successfully!";
+    try {
+        $pdo->exec("UPDATE analytics SET total_checks = 0, download_clicks = 0, exit_clicks = 0");
+        $success = "✅ Analytics reset successfully!";
+    } catch(PDOException $e) {
+        $error = "❌ Error resetting analytics: " . $e->getMessage();
+    }
 }
 
 // Get current settings
-$settings = $pdo->query("SELECT * FROM expiry_settings WHERE id = 1")->fetch();
-$analytics = $pdo->query("SELECT * FROM analytics WHERE id = 1")->fetch();
+try {
+    $settings = $pdo->query("SELECT * FROM expiry_settings WHERE id = 1")->fetch();
+    $analytics = $pdo->query("SELECT * FROM analytics WHERE id = 1")->fetch();
+} catch(PDOException $e) {
+    die("❌ Error loading settings: " . $e->getMessage());
+}
 
 // Calculate time until expiry
 $now = new DateTime();
@@ -100,13 +114,17 @@ $is_expired = $now > $expiry;
             width: 30px; height: 30px; display: inline-block; 
             border-radius: 5px; margin-left: 10px; vertical-align: middle;
         }
+        .logout { float: right; background: #95a5a6; }
+        .logout:hover { background: #7f8c8d; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🚀 App Expiry Control Panel</h1>
-            <p>Manage your app expiry settings and monitor analytics</p>
+            <p>Welcome, <?php echo $_SESSION['admin_user']; ?>! 
+               <a href="?logout=1" class="btn logout">Logout</a>
+            </p>
         </div>
 
         <?php if (isset($success)): ?>
@@ -123,10 +141,10 @@ $is_expired = $now > $expiry;
                 <div class="countdown <?php echo $is_expired ? 'expired' : 'active'; ?>">
                     <?php echo $is_expired ? '⏰ EXPIRED' : '⏳ ACTIVE'; ?>
                 </div>
-                <p>Expiry Date: <?php echo date('Y-m-d H:i:s', strtotime($settings['expiry_date'])); ?></p>
-                <p>Total Checks: <?php echo $analytics['total_checks']; ?></p>
-                <p>Update Clicks: <?php echo $analytics['download_clicks']; ?></p>
-                <p>Exit Clicks: <?php echo $analytics['exit_clicks']; ?></p>
+                <p><strong>Expiry Date:</strong> <?php echo date('Y-m-d H:i:s', strtotime($settings['expiry_date'])); ?></p>
+                <p><strong>Total Checks:</strong> <?php echo $analytics['total_checks']; ?></p>
+                <p><strong>Update Clicks:</strong> <?php echo $analytics['download_clicks']; ?></p>
+                <p><strong>Exit Clicks:</strong> <?php echo $analytics['exit_clicks']; ?></p>
                 
                 <form method="POST" style="margin-top: 20px;">
                     <button type="submit" name="reset_analytics" class="btn btn-danger">Reset Analytics</button>
