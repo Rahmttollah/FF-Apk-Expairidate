@@ -1,0 +1,8 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "variables": {
+    "NIXPACKS_PHP_VERSION": "8.2"
+  }
+}
