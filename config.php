@@ -1,24 +1,21 @@
 <?php
 // SQLite database connection - Railway compatible
-$database_file = __DIR__ . '/database/expiry.db';
-$database_dir = __DIR__ . '/database';
-
-// Create database directory if not exists
-if (!is_dir($database_dir)) {
-    mkdir($database_dir, 0755, true);
-}
+$database_file = __DIR__ . '/expiry.db'; // Direct root folder mein
 
 try {
     $pdo = new PDO("sqlite:" . $database_file);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Enable foreign keys and other SQLite optimizations
     $pdo->exec("PRAGMA foreign_keys = ON");
     $pdo->exec("PRAGMA journal_mode = WAL");
     
 } catch(PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    // If first attempt fails, try memory database as fallback
+    try {
+        $pdo = new PDO("sqlite::memory:");
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch(PDOException $e2) {
+        die("Database connection failed: " . $e2->getMessage());
+    }
 }
 
 // Default admin credentials
@@ -52,20 +49,33 @@ function create_tables_if_not_exist($pdo) {
             exit_clicks INTEGER DEFAULT 0,
             last_check DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )",
-        
-        "INSERT OR IGNORE INTO expiry_settings (id, expiry_date, dialog_title, dialog_message, update_link) 
-         VALUES (1, '2024-12-31 23:59:59', 'NEED UPDATE VELTRIX MODS V16📢', 'CLICK ON UPDATE FOR V17 ✅', 'https://t.me/RNRCHANNELS')",
-        
-        "INSERT OR IGNORE INTO analytics (id, total_checks) VALUES (1, 0)"
+        )"
     ];
     
     foreach ($tables_sql as $sql) {
         try {
             $pdo->exec($sql);
         } catch(PDOException $e) {
-            // Continue even if some queries fail
+            // Continue execution
         }
+    }
+    
+    // Insert default data if not exists
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM expiry_settings");
+        $result = $stmt->fetch();
+        if ($result['count'] == 0) {
+            $pdo->exec("INSERT INTO expiry_settings (expiry_date, dialog_title, dialog_message, update_link) 
+                       VALUES ('2024-12-31 23:59:59', 'NEED UPDATE VELTRIX MODS V16📢', 'CLICK ON UPDATE FOR V17 ✅', 'https://t.me/RNRCHANNELS')");
+        }
+        
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM analytics");
+        $result = $stmt->fetch();
+        if ($result['count'] == 0) {
+            $pdo->exec("INSERT INTO analytics (total_checks) VALUES (0)");
+        }
+    } catch(PDOException $e) {
+        // Continue execution
     }
 }
 ?>
