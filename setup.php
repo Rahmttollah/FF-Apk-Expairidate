@@ -1,45 +1,55 @@
 <?php
 include 'config.php';
 
-// Create tables
-$sql = "
-CREATE TABLE IF NOT EXISTS expiry_settings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    expiry_date DATETIME NOT NULL,
-    dialog_title VARCHAR(255) NOT NULL,
-    dialog_message TEXT NOT NULL,
-    update_link VARCHAR(500) NOT NULL,
-    button_text VARCHAR(100) NOT NULL DEFAULT 'UPDATE 🔴',
-    exit_text VARCHAR(100) NOT NULL DEFAULT 'Exit App',
-    primary_color VARCHAR(7) DEFAULT '#00ff00',
-    background_color VARCHAR(7) DEFAULT '#0000ff',
-    text_color VARCHAR(7) DEFAULT '#ff00ff',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+echo "<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Complete</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .container { max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; }
+        .success { background: #4CAF50; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .info { background: #2196F3; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .btn { display: inline-block; padding: 12px 24px; background: #FF9800; color: white; text-decoration: none; border-radius: 8px; margin: 10px 5px; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h1>🚀 Setup Complete!</h1>
+        <div class='success'>✅ Database & Tables successfully created!</div>
+        <div class='info'>
+            <h3>📧 Admin Login Details:</h3>
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> admin123</p>
+        </div>
+        <div class='info'>
+            <h3>🔗 Your API Endpoint:</h3>
+            <p><strong>URL:</strong> https://ff-apk-expairidate.up.railway.app/</p>
+            <p>Use this URL in your Android app</p>
+        </div>
+        <br>
+        <a href='login.php' class='btn'>Go to Admin Panel</a>
+        <a href='/' class='btn'>Test API</a>
+    </div>
+</body>
+</html>";
 
-CREATE TABLE IF NOT EXISTS analytics (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    total_checks INT DEFAULT 0,
-    download_clicks INT DEFAULT 0,
-    exit_clicks INT DEFAULT 0,
-    last_check DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+// Force create tables one more time
+create_tables_if_not_exist($pdo);
 
-INSERT IGNORE INTO expiry_settings (id, expiry_date, dialog_title, dialog_message, update_link) 
-VALUES (1, '2024-12-31 23:59:59', 'NEED UPDATE VELTRIX MODS V16📢', 'CLICK ON UPDATE FOR V17 ✅', 'https://t.me/RNRCHANNELS');
-
-INSERT IGNORE INTO analytics (id, total_checks) VALUES (1, 0);
-";
-
+// Test the API endpoint
 try {
-    $pdo->exec($sql);
-    echo "✅ Database setup completed successfully!<br>";
-    echo "📧 Admin Login: admin<br>";
-    echo "🔑 Admin Password: admin123<br>";
-    echo "<a href='login.php'>Go to Admin Panel</a>";
-} catch(PDOException $e) {
-    die("Setup failed: " . $e->getMessage());
+    $settings = $pdo->query("SELECT * FROM expiry_settings WHERE id = 1")->fetch();
+    $analytics = $pdo->query("SELECT * FROM analytics WHERE id = 1")->fetch();
+    
+    echo "<div class='info' style='margin-top: 20px;'>
+            <h3>✅ Database Test Successful!</h3>
+            <p>Expiry Date: " . $settings['expiry_date'] . "</p>
+            <p>Total Checks: " . $analytics['total_checks'] . "</p>
+          </div>";
+} catch(Exception $e) {
+    echo "<div style='background: #f44336; padding: 15px; border-radius: 8px; margin: 10px 0;'>
+            ❌ Database Error: " . $e->getMessage() . "
+          </div>";
 }
 ?>
